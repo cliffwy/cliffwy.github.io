@@ -1,16 +1,691 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title> hello </title>
+<head>
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.1/css/all.css">  
   </head>
-  <body>
-    <h1> hello world </h1>
-  </body>
-</html>
+<body>
+  <h1>
+    hello world
+    </h1>
+    <div id="mytablecontainer">
+        <h3>
+            <span>JavaScript Filter Table Data</span>
+            <input type="search" placeholder="Search..." class="form-control search-input" data-table="customers-list"/>
+        </h3>
+    </div>
+    <div>
+      <t-myform>
+         <t-h1>form template here</t-h1>
+      </t-myform>
+    </div>
+    <p>
+      <input type="button" onclick="sendmessage();" value="button">
+    </p>
+    <style>
+    table tr td {
+        border: 1px solid red;
+    }
+    .tTable {
+      border: 1px solid red;
+    }
+    .tHeader {
+      background-color: lightblue;
+    }
+    .tFooter {
+      background-color: lightgrey;
+      text-align:right;
+    }
+    .tData {
+      background-color:lightgreen;
+    }
+    .tForm {
+      border: 1px solid black;
+      border-radius: 5%;
+      background-color: burlywood;
+      margin: 2px;
+      padding: 1em;
+    }
+    .tCaption {
+        white-space: nowrap; 
+        width: 50%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display:inline-block;
+    }
+    .tSearch {
+        width: 30%;
+        overflow: hidden;
+    }
+    .tMenu {
+        position: relative;
+        display: inline-block;
+    }
+    .tMenu::before {
+        content: "\f0c9";
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        color: #ccc;
+    }
+    .tMenu-content {
+        display: none;
+        font-family: "Font Awesome 5 Free";
+        font-size:9px;
+        position: absolute;
+        background-color: #f9f9f9;
+        min-width: 16px;
+        box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.2);
+        padding: 6px 6px;
+        margin: 0px;
+        z-index: 1;
+    }
+    .tMenu:hover .tMenu-content {
+       display: block;
+    }
+    .alignLeft {
+        float: left;
+    }
+    .alignRight {
+        float: right;
+      margin: 2px;
+    }
+    .btnAddRow {
+      float: left;
+      border:1px solid red;
+      border-radius: 50%;
+      text-align: center;
+      text-decoration: none;
+    }
+    .pageCtrlBtn {
+      border:none;
+      display:inline-block;
+      padding:0px 2px;
+      vertical-align:middle;
+      overflow:hidden;
+      text-decoration:none;
+      color:inherit;
+      background-color:inherit;
+      text-align:center;
+      cursor:pointer;
+      white-space:nowrap 
+    }
+    .pageCtrlBtn:hover:not([disabled]){box-shadow:0 8px 16px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19)}
+    .pageCtrlBtn:active{border:1px solid red;}
+    .pageCtrlBtn:focus{border:1px solid red;}
+    .pageCtrlBtn:target{border:1px solid red;}
+    </style>
+    <script>
+    var gTableData={};
+    var gTableForm={};
+    var gTableSelectedText={};
+    /*
+    * https://www.toptal.com/designers/htmlarrows/symbols/
+    */
+    var selectedMark="&check;";
+    function selectedDataRowIdx(tbl) {
+         for( var j = 0; j < tbl.rows.length; j++)
+         {
+            if(tbl.rows[j].getAttribute("rtype") == "data") {
+              if(tbl.rows[j].querySelectorAll("#"+tbl.id + "-selected").length > 0) {
+                return j;
+              }
+            }
+         }
+         return -1;
+    }
+    function selectDataRow(row, tbl) {
+         //if already selected, deselect it
+         var selected_cells = [];
+         if(row != null) {
+            selected_cells = row.querySelectorAll("#"+tbl.id + "-selected");
+         }
+         if(selected_cells.length > 0) {
+            //deselect it
+            selected_cells[0].id = "";
+            selected_cells[0].innerHTML = gTableSelectedText[tbl.id];
+            gTableSelectedText[tbl.id] = "";
+         }
+         else {
+            var selected = selectedDataRowIdx(tbl);     
+            if(selected >= 0) {
+                  var cells = tbl.querySelectorAll("#"+tbl.id + "-selected");
+                  if(cells.length > 0) {
+                    cells[0].innerHTML = gTableSelectedText[tbl.id];
+                    cells[0].id = "";
+                  }
+            }
+            if(row != null) {
+                var cell = row.cells[0];
+                cell.id = tbl.id + "-selected";
+                gTableSelectedText[tbl.id] = cell.innerHTML;
+                cell.innerHTML = selectedMark + cell.innerHTML;
+            }
+        }
+        onTableRowSelectChange(tbl);
+    }
+    function insertDataRow(tbl, row, rdata)
+    {
+        var hdr = null;
+        for( var j = 0; j < tbl.rows.length; j++)
+        {
+            if(tbl.rows[j].getAttribute("rtype") == "header") {
+              hdr = tbl.rows[j];
+            }
+        }
+        var fillrow = function(hdr, trow, drow) {
+              var cells = trow.cells;
+              if(hdr != null) {
+                  while(cells.length < hdr.cells.length) {
+                      var cell = trow.insertCell();
+                      cell.className = "tData";
+                  }
+                  for (var j = 0; j <hdr.cells.length; j++) 
+                  {
+                    var name = hdr.cells[j].getAttribute("name");
+                    var dr = drow;
+                    if(dr[name] != null) {
+                        if(cells.length < j+1) {
+                            trow.insertCell();
+                        }
+                        cells[j].innerHTML = `${dr[name]}`;
+                    }
+                  }
+             }
+             else {
+                var dr = drow;
+                Object.keys(dr).forEach(function(key,index) {
+                    // key: the name of the object key
+                    // index: the ordinal position of the key within the object 
+                    while(cells[index] === null) {
+                           trow.insertCell();
+                           cells = trow.cells; 
+                    }
+                    cells[j].innerHTML = `${dr[key]}`;
+                });
+             }
+        }
+        if(row != null) {
+          fillrow(hdr, row, rdata);
+          return row;
+        }
+        else { //create a new row
+              var lastdatarow = 0;
+              for(var j = 0; j < tbl.rows.length; j++) {
+                  if(tbl.rows[j].getAttribute("rtype") != "footer") {
+                    lastdatarow++;
+                  }
+              }
+              var newrow = tbl.insertRow(lastdatarow);
+              newrow.addEventListener('click', function() {
+                  selectDataRow(this, tbl);
+              });
+              newrow.setAttribute("rtype", "data");
+              for (var j = 0; j < hdr.cells.length; j++) 
+              {
+                var name = hdr.cells[j].getAttribute("name");
+                var cell = newrow.insertCell(j);
+                cell.className="tData";
+              }
+              fillrow(hdr, newrow, rdata);
+              return newrow;
+        }
+    }
+    function applyDataChange(tbl, rowdata) {
+       var rows = tbl.rows;
+       var hdr = null;
+       var selected_rowid = selectedDataRowIdx(tbl);
+       if(selected_rowid > 0) {
+            selectDataRow(null, tbl); //deselect first
+            insertDataRow(tbl, tbl.rows[selected_rowid], rowdata);  
+            selectDataRow(tbl.rows[selected_rowid], tbl);
+        }
+        else {
+                gTableData[tbl.id].rows.push(rowdata);
+                var newrow = insertDataRow(tbl, null, rowdata);
+                selectDataRow(newrow, tbl);
+              }
+     }
+    function modifyDataRow(tbl) {
+       var rows = tbl.rows;
+       var rowid = 0;
+       var hdr = null;
+       var selected_rowid = selectedDataRowIdx(tbl);
+       if(selected_rowid >= 0) {
+            rowid = selected_rowid+1;
+       }
+       var modifydatafrm = tbl.querySelectorAll(".tForm");
+       if(modifydatafrm.length >= 1) {
+            //in modification, don't open another one.
+            return;
+       }
+       for(var j = 0; j < rows.length; j++) {
+           if(rows[j].getAttribute("rtype") === "header") {
+            hdr = rows[j];
+          }
+          if(selected_rowid < 0 && rows[j].getAttribute("rtype") != "footer") {
+            rowid++;
+          }
+       }
+       var r = tbl.insertRow(rowid);
+       var cell = r.insertCell();
+       cell.setAttribute("colspan", tbl.rows[0].cells.length);
+       var cellform = gTableForm[tbl.id];
+       if(cellform.includes("script:")) {
+            var functionMame = cellform.substr("script:".length);
+            //call function
+            cell.innerHTML = window[functionMame](tbl, cell);
+       }
+       else {
+          cell.innerHTML =  cellform;
+       }
+       if (cell.innerHTML == "") {
+           var frm = document.createElement("FORM");
+           frm.className = "tForm";
+           for(var j = 0; j < hdr.cells.length; j++) {
+               var lbl = document.createElement("LABEL");
+               lbl.innerHTML = hdr.cells[j].innerHTML + ":";
+               var input = document.createElement("INPUT");
+               input.type = "text";
+               var p = document.createElement("P");
+               p.style = "padding:1px;margin:1px;";
+               frm.appendChild(lbl);
+               frm.appendChild(input);
+               frm.appendChild(p);
+           }
+           cell.appendChild(frm);
+           var cancelBtn = document.createElement('BUTTON');
+           cancelBtn.innerHTML = "Cancel";
+           cancelBtn.className = "alignRight";
+           cancelBtn.addEventListener('click', function() {
+                tbl.deleteRow(rowid);
+           })
+           var submitBtn = document.createElement('BUTTON');
+           submitBtn.innerHTML = "Submit";
+           submitBtn.className = "alignRight";
+           submitBtn.addEventListener('click', function() {
+                tbl.deleteRow(rowid);
+                if(selected_rowid > 0) {
+                    selectDataRow(null, tbl); //deselect first
+                    insertDataRow(tbl, tbl.rows[selected_rowid], {"a":"9","b":"99"});  
+                    selectDataRow(tbl.rows[selected_rowid], tbl);
+                }
+                else {
+                  gTableData[tbl.id].rows.push({"a":"9","b":"99"});
+                  var newrow = insertDataRow(tbl, null, {"a":"9","b":"99"});
+                  selectDataRow(newrow, tbl);
+                }
+           })
+           cell.appendChild(submitBtn);
+           cell.appendChild(cancelBtn);
+        }
+    }
+    function deleteDataRow(tbl) 
+    {
+       var rows = tbl.rows;
+       var hdr = tbl.rows[0];
+       var data = gTableData[tbl.id];
+       if(hdr.getAttribute("rtype") != "header") {
+            hdr = null;
+       }
+       var pgsize = parseInt(tbl.getAttribute("pgsize"));
+       var cpageno = parseInt(tbl.getAttribute("pgno"));
+       var selected_rowid = selectedDataRowIdx(tbl);
+       var modifydatafrm = tbl.querySelectorAll(".tForm");
+       if(selected_rowid < 0  || modifydatafrm.length >= 1) {
+            //in modification, don't delete one.
+            return;
+       }
+       var dataIdx = (cpageno-1)*pgsize + selected_rowid - 1;
+       var before = data.rows.length;  
+       var realIdx = 0;
+       if(dataIdx >= 0 && dataIdx < before ) {
+            realIdx = parseInt(data.rows[realIdx]["__rowid__"]);
+            var all = gTableData[tbl.id + ":all"];
+            if(all != null) {
+               all.rows.splice(realIdx, 1);
+            }
+            data.rows.splice(dataIdx, 1);
+       }
+       if(data.rows.length < before) {
+          tbl.setAttribute("pgno", "-1");
+          gotoPage(cpageno,tbl);      
+       }
+    }
+    function gotoPage(pgno, tbl)
+    {
+        var rows = tbl.rows;
+        var hdr = tbl.rows[0];
+        var data = gTableData[tbl.id];
+        var pgsize = parseInt(tbl.getAttribute("pgsize"));
+        var cpageno = parseInt(tbl.getAttribute("pgno"));
+        if(pgsize <= 0 || pgno == cpageno) {
+          return; //no page
+        }
+        if(hdr.getAttribute("rtype") != "header") {
+            hdr = null;
+        }
+        var dataIdx = (pgno-1)*pgsize;
+        var datarows = 0
+        var tdr = 0;
+        for(var tr = 0; tr < rows.length;)
+        {
+              if(rows[tr].getAttribute("rtype") != "data") {
+                ++tr;
+                continue;
+              }
+              ++datarows;
+              if(!(tdr < pgsize) || !(tdr+dataIdx < data.rows.length)) {
+                  tbl.deleteRow(tr);
+                  continue;        
+              }
+              insertDataRow(tbl, rows[tr], data.rows[tdr+dataIdx]);
+              ++tdr;
+              ++tr; 
+        }
+        while (datarows < pgsize && tdr+dataIdx < data.rows.length)
+        {
+              insertDataRow(tbl, null, data.rows[tdr+dataIdx]);
+              ++datarows;
+              ++tdr;
+        }
+        tbl.setAttribute("pgno", pgno);
+        var selected_cells = tbl.querySelectorAll("#"+tbl.id + "-selected");
+        if(selected_cells.length > 0) {
+            selected_cells[0].id = "";
+            gTableSelectedText[tbl.id] = "";
+        }
+    }
+    function gotoPageForce(pgno, tbl) {
+      if(pgno === 0) {
+        pageno = parseInt(tbl.getAttribute("pgno"));
+      }
+      tbl.setAttribute("pgno", "-1");
+      gotoPage(pgno, tbl);
+    }
+    //hdr: []
+    //create pageCtrl for this table
+    // added in the footer
+    function onClickedPageCtrl(btn, btn_scroll_left, btn_scroll_right, tbl, footer, arg) {
+      var cpageno = parseInt(tbl.getAttribute("pgno"));
+      var btns = footer.querySelectorAll(".pageCtrlBtn");
+      var data = gTableData[tbl.id];
+      var pagesize = parseInt(tbl.getAttribute("pgsize"));
+      var how = 0;
+      if(pagesize <= 0) {
+        //no page
+        return;
+      }
+      if(arg === 'scroll-left') {
+          how = -1;
+      }
+      else if (arg === 'scroll-right') {
+          how = 1;
+      }
+      var minpgno = 99999999;
+      var maxpgno = 0;
+      btns.forEach( b => {
+            var pgno = parseInt(b.innerHTML);
+            if( !isNaN(pgno) && pgno != null) {
+              if(minpgno > pgno) minpgno = pgno;
+              if(maxpgno < pgno) maxpgno = pgno;
+            }
+      });
+      if(how === -1 && minpgno <= 1) {
+         btn_scroll_left.disabled = true;
+         if(maxpgno < data.rows.length/pagesize ) {
+           btn_scroll_right.disabled = false;
+         }
+         return; //do nothing
+      }
+      if(how === 1 && maxpgno >= data.rows.length/pagesize) {
+        btn_scroll_right.disabled = true;
+        if(minpgno > 1) {
+             btn_scroll_left.disabled = false;
+        }
+        return; //do nothing;
+      }
+      if(how != 0) {
+         minpgno += how;
+         maxpgno += how;
+         btns.forEach( b => {
+            var pgno = parseInt(b.innerHTML);
+            if( !isNaN(pgno) && pgno != null) {
+              pgno += how;
+              b.innerHTML = pgno.toString();
+            }
+         });
+         if(cpageno < minpgno) {
+             gotoPage(minpgno, tbl);
+         }
+         else if( cpageno > maxpgno) {
+             gotoPage(maxpgno, tbl);
+         }
+      }
+      else {
+        gotoPage(parseInt(btn.innerHTML), tbl);
+      }  
+    }
+    function createPageCtrl(tbl) {
+       var num = 5; 
+       if(tbl.rows.length > 0) {
+         var footer = tbl.rows[tbl.rows.length - 1];
+         if(footer.getAttribute("rtype") === "footer") {
+            var cell = footer.cells[0];
+            var span = document.createElement("span");
+            var btn_scroll_left = document.createElement("BUTTON");
+                btn_scroll_left.className = "pageCtrlBtn";
+                btn_scroll_left.innerHTML="<<";
+            var btn_scroll_right = document.createElement("BUTTON");
+                btn_scroll_right.className = "pageCtrlBtn";
+                btn_scroll_right.innerHTML=">>";
+            btn_scroll_left.addEventListener('click', function() {
+                onClickedPageCtrl (this,btn_scroll_left, btn_scroll_right, tbl, footer,'scroll-left'); });
+            btn_scroll_right.addEventListener('click', function() { 
+              onClickedPageCtrl (this, btn_scroll_left, btn_scroll_right, tbl, footer,'scroll-right'); });
+            span.appendChild(btn_scroll_left);
+            for(var j = 0; j < num; ++j) {
+                   var btn_page = document.createElement("BUTTON");
+                       btn_page.className = "pageCtrlBtn";
+                       btn_page.innerHTML = (j+1).toString();
+                       btn_page.addEventListener('click', function() {
+                          onClickedPageCtrl (this, btn_scroll_left, btn_scroll_right, tbl, footer,''); });
+                       span.appendChild(btn_page);
+            }
+            span.className="alignRight";
+            span.appendChild(btn_scroll_right);
+            cell.appendChild(span);
+         }
+       }
+    }
+    function createHeader(tbl, header) {
+        var hdr = tbl.createTHead();
+        var row = hdr.insertRow(0);
+        row.setAttribute("rtype", "header");
+        header.forEach(c => {
+           var cell = row.insertCell();
+             cell.className = "tHeader";
+             if(c.colspan != null) {
+                 cell.colspan = c.colspan;
+             }
+             if(c.width != null) {
+                cell.style.width = c.width;
+             }
+             cell.setAttribute("name", c.name);
+             cell.innerHTML = `<b>${c.value}</b>`;      
+        });
+        return hdr;
+    }
+    function createFooter(tbl) {
+        if(tbl.rows.length > 0) {
+          var footer = tbl.insertRow();
+          footer.setAttribute("rtype", "footer");
+          var cell = footer.insertCell();
+          cell.className = "tFooter";
+          cell.setAttribute("colspan", tbl.rows[0].cells.length);
+        }
+    }
+    //
+    function applyFilter(tbl, filter) {
+         var all =  gTableData[tbl.id + ':all'];
+         var data = { "rows":[] };
+         var rowid = 0;
+         all.rows.forEach(r =>  {
+              var keys = Object.keys(r);
+              var valueStr = ''
+              keys.forEach( k => {
+                  valueStr += r[k];
+              });
+              if(valueStr.includes(filter)) {
+                  var x = Object.assign({}, r);
+                  x['__rowid__']= rowid;
+                  data.rows.push(x);
+              }
+              ++rowid;
+         });
+         gTableData[tbl.id] = data;
+         return data;
+    }
+    function fillTable(tbl, idx, data) {
+       gTableData[tbl.id + ':all'] = Object.assign({}, data);
+       data = applyFilter(tbl, '');
+       var pgsize = parseInt(tbl.getAttribute("pgsize"));
+       var pgno = parseInt(tbl.getAttribute("pgno"));
+       var BreakException = {};
+       try {
+          var cur_idx = 0;
+          var r_inserted = 0;
+          data.rows.forEach(r => {
+              console.log("insert r");
+              if(cur_idx < idx) {
+                  cur_idx++;
+              }
+              else {
+                    if(pgsize > 0 && r_inserted >= pgsize) {
+                        throw BreakException;
+                    }
+                    insertDataRow(tbl, null, r);
+                    r_inserted++;
+              }
+          });
+        }
+        catch (e) {
+          if (e !== BreakException) throw e;
+        }
+    }
+    function onMenuButtonClicked(tbl, action) {
+      if(action == "Add" || action == "Modify") {
+          modifyDataRow(tbl); 
+      }
+      else if(action == "Delete") {
+        deleteDataRow(tbl);
+      }
+    }
+    function onTableRowSelectChange(tbl) {
+      selected = selectedDataRowIdx(tbl);
+      var text = "Add";
+      if(selected >= 0) {
+         text = "Modify";
+      }
+      var menuBtns = tbl.querySelectorAll(".tMenu-item");
+      menuBtns.forEach(i => {
+          console.log("change menu text to: " + text);
+          if(i.text === "Add" || i.text === "Modify") {
+            i.text = text;
+          }
+      });
+    }
+    function createDropdownMenu(tbl, menu) {
+        var menus = ["Add", "Delete"];
+        menu.addEventListener('blur', function() {
+            console.log('show event');
+            this.style.removeProperty('display');
+        });
+        menus.forEach(m => {
+            var item = document.createElement("a");
+            item.className = "tMenu-item";
+            item.href = "#";
+            item.text = m;
+            item.addEventListener("click", function() { 
+                console.log(m);   
+                menu.style.display = "none"; 
+                setTimeout(function(){ 
+                    menu.style.removeProperty('display');
+                }, 500);  
+                onMenuButtonClicked(tbl, item.text);
+            });
+            menu.appendChild(item);
+            menu.appendChild(document.createElement("p"));
+        });
+    }
+    function createTable(tableid, width, pagesize, caption) {
+      gTableForm[tableid] = "";
+      gTableData[tableid] = null;
+      var tbl = document.createElement("TABLE");
+      tbl.className = "tTable";
+      tbl.id = tableid;
+      tbl.setAttribute("pgsize", pagesize);
+      tbl.setAttribute("pgno", 1);
+      tbl.setAttribute("filter", '');
+      tbl.style.width = width;
+      var title = tbl.createCaption();
+      title.style = 'text-align: left;';
+      title.innerHTML = `<span class="tCaption alignLeft">JavaScript Filter Table Data </span>
+      <span class="tMenu alignRight"><div class="tMenu-content"></div></span><input type="search" class="tSearch alignRight" placeholder="Search..."/>`;
+      tbl.addEventListener('resize', function() {
+            alert("changed!");
+      });
+      title.querySelector(".tSearch").addEventListener('keyup', function(event) {
+          if(event.keyCode === 13) {
+            applyFilter(tbl, this.value);
+            gotoPageForce(1, tbl);
+          }
+      })
+      createDropdownMenu(tbl, title.querySelector(".tMenu-content"));
+      return tbl;
+    }  
+    handlerDataChange = funciton(event) {
+       let tableid = event.data.tableid;
+       let rowdata = event.data.row;
+       applyDataChange(document.getElementById(tableid, rowdata));
+    }; 
+    window.addEventListener("message", handlerDataChange);
+    function notifyDataChange(tableid, data) {
+      window.postMessage ({ "tableid": tableid, "row":data}, "*");
+    }
+    //
+    var tbl = createTable("mytable","50%", 2, "demo");
+    gTableForm[tbl.id] = "script:createForm";
+    function createForm(tbl, cell) {
+        return `<form id="1" class="tForm"> <input type="text"></input> </form>`;
+    }
+    createHeader(tbl,  [{"width":"20%", "name":"a","value":"column-1"},
+                 {"name":"b", "value":"column-2"},
+                 {"name":"c", "value":"column-3"}]);
+    fillTable(tbl, 0,
+       {"rows":[{"b":"1","a":"11"},{"a":"2","b":"22"},{"a":"3","b":"33"},{"a":"4","b":"44"},{"a":"5","b":"55"},{"a":"6","b":"66"},{"a":"7","b":"77"}]}
+    );
+    createFooter(tbl);
+    createPageCtrl(tbl);
+   
+    window.addEventListener("message", (event)=>{
+      if(event.data.tableid === "mytable") {
+              alert("mytbale: data-change event received!");
+      }
+    });
+    window.addEventListener("message", (event)=>{
+      if(event.data.tableid === "mytable2") {
+              alert("mytable2: data-change event received!");
+      }
+    });
+    document.getElementById("mytablecontainer").appendChild(tbl);
 
+    function sendmessage() {
+      window.postMessage (
+        {"message":"data-change", "tableid":"mytable2"}, "*");
+    }
+    </script>
 
-
-
+</body>
+  </html>
 
 
 
