@@ -1,10 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.1/css/all.css">  
-</head>
-<body>
-  <h1>
+<h1>
     hello world
     </h1>
     <div id="mytablecontainer">
@@ -41,7 +36,7 @@
     .tForm {
       border: 1px solid black;
       border-radius: 5%;
-      background-color: burlywood;
+      background-color:lightblue;
       margin: 2px;
       padding: 1em;
     }
@@ -229,6 +224,9 @@
               return newrow;
         }
     }
+    function cancelDataChange(tblid, rowid) {
+      document.getElementById(tblid).deleteRow(rowid);
+    }
     function applyDataChange(tbl, rowdata) {
        var rows = tbl.rows;
        var hdr = null;
@@ -272,7 +270,7 @@
        if(cellform.includes("script:")) {
             var functionMame = cellform.substr("script:".length);
             //call function
-            cell.innerHTML = window[functionMame](tbl, cell);
+            cell.innerHTML = window[functionMame](tbl, rowid, cell);
        }
        else {
           cell.innerHTML =  cellform;
@@ -654,8 +652,10 @@
     //
     var tbl = createTable("mytable","50%", 2, "demo");
     gTableForm[tbl.id] = "script:createForm";
-    function createForm(tbl, cell) {
-        return `<form id="1" class="tForm"> <input type="text"></input> </form>`;
+    function createForm(tbl, rowid, cell) {
+        return `<form id="1" class="tForm"> <input type="text"></input>
+           <button onclick="cancelDataChange('${tbl.id}', '${rowid}')">Cancel</button>
+          </form>`;
     }
     createHeader(tbl,  [{"width":"20%", "name":"a","value":"column-1"},
                  {"name":"b", "value":"column-2"},
@@ -677,13 +677,8 @@
       }
     });
     document.getElementById("mytablecontainer").appendChild(tbl);
-    function sendmessage() {
+   function sendmessage() {
       window.postMessage (
         {"message":"data-change", "tableid":"mytable2"}, "*");
-    } 
-    </script>
-</body>
-  </html>
-
-
-
+    }
+</script>
