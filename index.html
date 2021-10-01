@@ -2,7 +2,7 @@
 <html>
 <head>
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.1/css/all.css">  
-  </head>
+</head>
 <body>
   <h1>
     hello world
@@ -642,7 +642,7 @@
       createDropdownMenu(tbl, title.querySelector(".tMenu-content"));
       return tbl;
     }  
-    handlerDataChange = funciton(event) {
+    var handlerDataChange = function(event) {
        let tableid = event.data.tableid;
        let rowdata = event.data.row;
        applyDataChange(document.getElementById(tableid, rowdata));
@@ -677,13 +677,11 @@
       }
     });
     document.getElementById("mytablecontainer").appendChild(tbl);
-
     function sendmessage() {
       window.postMessage (
         {"message":"data-change", "tableid":"mytable2"}, "*");
-    }
+    } 
     </script>
-
 </body>
   </html>
 
